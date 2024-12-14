@@ -1,0 +1,71 @@
+class MemoryAllocator:
+    def __init__(self):
+        # Initialize memory blocks
+        self.memory_blocks = {
+            50: ['Block 1', 'Block 2'],
+            100: ['Block 3', 'Block 4'],
+            200: ['Block 5']
+        }
+        self.free_blocks = {
+            50: ['Block 2'],
+            100: [],
+            200: [],
+            20: []  # To handle small blocks like the split 20 KB block
+        }
+        self.allocated_blocks = {}
+
+    def allocate_process(self, process_name, required_memory):
+        # Try to find a block that fits the process
+        if required_memory in self.memory_blocks and self.memory_blocks[required_memory]:
+            block = self.memory_blocks[required_memory].pop(0)
+            self.allocated_blocks[process_name] = (block, required_memory)
+            print(f'{process_name} allocated {required_memory} KB (using {block})')
+        else:
+            self.allocate_best_fit(process_name, required_memory)
+
+    def allocate_best_fit(self, process_name, required_memory):
+        # Check for a block in larger lists and perform splitting if necessary
+        for size in sorted(self.memory_blocks.keys()):
+            if size >= required_memory and self.memory_blocks[size]:
+                block = self.memory_blocks[size].pop(0)
+                self.allocated_blocks[process_name] = (block, required_memory)
+                print(f'{process_name} allocated {required_memory} KB (using {block})')
+
+                # Handle splitting if the block is larger than needed
+                if size > required_memory:
+                    remaining_memory = size - required_memory
+                    if remaining_memory not in self.free_blocks:
+                        self.free_blocks[remaining_memory] = []
+                    self.free_blocks[remaining_memory].append(f'New small block from {block}')
+                    print(f'Split {block}, {remaining_memory} KB free block created')
+                break
+
+    def print_memory_state(self):
+        print('\nMemory State:')
+        print('Allocated Blocks:')
+        for process, (block, size) in self.allocated_blocks.items():
+            print(f'{process}: {size} KB ({block})')
+        print('Free Blocks:')
+        for size, blocks in self.free_blocks.items():
+            if blocks:
+                print(f'{size} KB: {blocks}')
+
+
+def get_process_input():
+    """Function to get process name and memory size input from user."""
+    process_name = input("Enter process name: ")
+    memory_size = int(input(f"Enter memory required for {process_name} in KB: "))
+    return process_name, memory_size
+
+
+# Initialize MemoryAllocator instance
+allocator = MemoryAllocator()
+
+# Get input for multiple processes
+num_processes = int(input("Enter the number of processes: "))
+for _ in range(num_processes):
+    process_name, memory_size = get_process_input()
+    allocator.allocate_process(process_name, memory_size)
+
+# Print the final memory state
+allocator.print_memory_state()
